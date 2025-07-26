@@ -1,0 +1,105 @@
+import mongoose from "mongoose";
+import fs from "fs";
+import path from "path";
+import csvParser from "csv-parser";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+import CsvUser from "../models/CsvUser.js";
+import Product from "../models/Product.js";
+import InventoryItem from "../models/InventoryItem.js";
+import DistributionCenter from "../models/DistributionCenter.js";
+import Order from "../models/Order.js";
+import OrderItem from "../models/OrderItem.js";
+
+const loadCsvToModel = (filepath, model, transformFn = (data) => data) => {
+  return new Promise((resolve, reject) => {
+    const items = [];
+    fs.createReadStream(filepath)
+      .pipe(csvParser())
+      .on("data", (row) => {
+        items.push(transformFn(row));
+      })
+      .on("end", async () => {
+        try {
+          await model.insertMany(items);
+          console.log(
+            `Inserted ${items.length} documents into ${model.modelName}`
+          );
+          resolve();
+        } catch (error) {
+          console.error(
+            `Error inserting documents into ${model.modelName}:`,
+            error.message
+          );
+          reject(error);
+        }
+      });
+  });
+};
+
+const parseDateFields = (row, fields) => {
+  fields.forEach((field) => {
+    if (row[field]) {
+      row[field] = new Date(row[field]);
+    }
+  });
+  return row;
+};
+
+const loadAll = async () => {
+  await mongoose.connect(process.env.MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  });
+  console.log("Connected to MongoDB");
+
+  const basePath = "./data";
+
+  await loadCsvToModel(path.join(basePath, "users.csv"), CsvUser, (row) =>
+    parseDateFields(row, ["created_at"])
+  );
+
+  await loadCsvToModel(path.join(basePath, "products.csv"), Product);
+
+  await loadCsvToModel(
+    path.join(basePath, "inventory_items.csv"),
+    InventoryItem,
+    (row) => parseDateFields(row, ["created_at", "sold_at"])
+  );
+
+  await loadCsvToModel(
+    path.join(basePath, "distribution_centers.csv"),
+    DistributionCenter
+  );
+
+  await loadCsvToModel(path.join(basePath, "orders.csv"), Order, (row) =>
+    parseDateFields(row, [
+      "created_at",
+      "returned_at",
+      "shipped_at",
+      "delivered_at",
+    ])
+  );
+
+  await loadCsvToModel(
+    path.join(basePath, "order_items.csv"),
+    OrderItem,
+    (row) =>
+      parseDateFields(row, [
+        "created_at",
+        "returned_at",
+        "shipped_at",
+        "delivered_at",
+      ])
+  );
+
+  await mongoose.disconnect();
+  console.log("Disconnected from MongoDB");
+};
+
+loadAll().catch((err) => {
+  console.error("Error loading data:", err.message);
+  process.exit(1);
+});
