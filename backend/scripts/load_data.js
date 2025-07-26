@@ -3,8 +3,17 @@ import fs from "fs";
 import path from "path";
 import csvParser from "csv-parser";
 import dotenv from "dotenv";
+import { fileURLToPath } from "url";
 
 dotenv.config();
+
+if (!process.env.MONGO_URI) {
+  console.error("❌ MONGO_URI not set in environment variables");
+  process.exit(1);
+}
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 import CsvUser from "../models/csv/CsvUser.js";
 import Product from "../models/csv/Product.js";

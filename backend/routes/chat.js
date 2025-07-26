@@ -2,6 +2,7 @@ import express from "express";
 import Session from "../models/Session.js";
 import Message from "../models/Message.js";
 import { chatWithLLM } from "../services/llmService.js";
+import { handleQuery } from "../services/queryHandler.js";
 
 const router = express.Router();
 
@@ -13,12 +14,14 @@ router.post("/", async (req, res) => {
       ? await Session.findById(conversationId)
       : await Session.create({ userId });
 
-    const userMessage = await Message.create({
+    // Store user message
+    await Message.create({
       sessionId: session._id,
       role: "user",
       content: message,
     });
 
+    // Get all messages in session
     const messages = await Message.find({ sessionId: session._id }).sort({
       createdAt: 1,
     });
@@ -28,16 +31,47 @@ router.post("/", async (req, res) => {
       content: msg.content,
     }));
 
+    // Ask LLM for reply
     const aiResponse = await chatWithLLM(formattedMessages);
 
-    const assistantMessage = await Message.create({
+    let parsed;
+    try {
+      parsed = JSON.parse(aiResponse);
+    } catch (_) {
+      parsed = null;
+    }
+
+    let finalReply = aiResponse;
+
+    if (parsed?.action === "query") {
+      const dbData = await handleQuery(parsed);
+
+      const summarizingMessages = [
+        {
+          role: "system",
+          content: `Here is the result of your database query:\n${JSON.stringify(
+            dbData,
+            null,
+            2
+          )}\nPlease summarize this for the user.`,
+        },
+      ];
+
+      finalReply = await chatWithLLM([
+        ...formattedMessages,
+        ...summarizingMessages,
+      ]);
+    }
+
+    // Store assistant message
+    await Message.create({
       sessionId: session._id,
       role: "assistant",
-      content: aiResponse,
+      content: finalReply,
     });
 
     res.status(200).json({
-      reply: aiResponse,
+      reply: finalReply,
       conversationId: session._id,
     });
   } catch (error) {
