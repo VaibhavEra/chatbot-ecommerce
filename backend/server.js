@@ -2,6 +2,7 @@ import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import chatRoutes from "./routes/chat.js";
+import sessionRoutes from "./routes/sessions.js";
 import cors from "cors";
 
 dotenv.config();
@@ -25,6 +26,7 @@ mongoose
   });
 
 app.use("/api/chat", chatRoutes);
+app.use("/api/sessions", sessionRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
