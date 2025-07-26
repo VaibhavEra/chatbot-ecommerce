@@ -7,7 +7,7 @@ export default function MessageList() {
   return (
     <div className="space-y-3">
       {messages.map((message, index) => (
-        <Message key={idx} role={message.role} content={message.content} />
+        <Message key={index} role={message.role} content={message.content} />
       ))}
     </div>
   );

@@ -6,12 +6,12 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-import CsvUser from "../models/CsvUser.js";
-import Product from "../models/Product.js";
-import InventoryItem from "../models/InventoryItem.js";
-import DistributionCenter from "../models/DistributionCenter.js";
-import Order from "../models/Order.js";
-import OrderItem from "../models/OrderItem.js";
+import CsvUser from "../models/csv/CsvUser.js";
+import Product from "../models/csv/Product.js";
+import InventoryItem from "../models/csv/InventoryItem.js";
+import DistributionCenter from "../models/csv/DistributionCenter.js";
+import Order from "../models/csv/Order.js";
+import OrderItem from "../models/csv/OrderItem.js";
 
 const loadCsvToModel = (filepath, model, transformFn = (data) => data) => {
   return new Promise((resolve, reject) => {
@@ -49,13 +49,10 @@ const parseDateFields = (row, fields) => {
 };
 
 const loadAll = async () => {
-  await mongoose.connect(process.env.MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  });
+  await mongoose.connect(process.env.MONGO_URI);
   console.log("Connected to MongoDB");
 
-  const basePath = "./data";
+  const basePath = path.join(__dirname, "./data");
 
   await loadCsvToModel(path.join(basePath, "users.csv"), CsvUser, (row) =>
     parseDateFields(row, ["created_at"])

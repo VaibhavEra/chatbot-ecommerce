@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const GROQ_API_URL = "https:api.com/openai/v1/chat/completions";
+const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 const MODEL = process.env.GROQ_MODEL || "llama-3.1-8b-instant";
 
 /**

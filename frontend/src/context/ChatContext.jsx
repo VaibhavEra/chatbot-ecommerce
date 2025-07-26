@@ -23,7 +23,7 @@ export const ChatProvider = ({ children }) => {
         conversation_id: activeSessionId,
       });
 
-      const { message: aiReply, conversation_id } = res.data;
+      const { reply: aiReply, conversation_id } = res.data;
 
       if (!activeSessionId) {
         setActiveSessionId(conversation_id);

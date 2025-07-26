@@ -3,7 +3,7 @@ import Session from "../models/Session.js";
 import Message from "../models/Message.js";
 import { chatWithLLM } from "../services/llmService.js";
 
-const router = express.router();
+const router = express.Router();
 
 router.post("/", async (req, res) => {
   try {
@@ -32,7 +32,7 @@ router.post("/", async (req, res) => {
 
     const assistantMessage = await Message.create({
       sessionId: session._id,
-      role: "user",
+      role: "assistant",
       content: aiResponse,
     });
 
